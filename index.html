@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drawing App</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Drawing App</h1>
+          <p id="statusMessage" role="status" aria-live="polite">Ready to draw.</p>
+        </div>
+        <button id="saveImageButton" class="primary-button" type="button" title="Save image">Save PNG</button>
+      </header>
+
+      <section class="workspace" aria-label="Drawing workspace">
+        <aside class="tools" aria-label="Drawing tools">
+          <div class="tool-group">
+            <label for="brushColor">Color</label>
+            <input id="brushColor" type="color" value="#1f2937" />
+          </div>
+
+          <div class="tool-group">
+            <label for="brushSize">Brush size <span id="brushSizeValue">8</span></label>
+            <input id="brushSize" type="range" min="1" max="60" value="8" />
+          </div>
+
+          <div class="tool-group">
+            <label>Canvas zoom <span id="zoomValue">100%</span></label>
+            <div class="tool-row zoom-row" role="group" aria-label="Canvas zoom">
+              <button id="zoomOutButton" class="tool-button" type="button">-</button>
+              <button id="zoomResetButton" class="tool-button" type="button">100%</button>
+              <button id="zoomInButton" class="tool-button" type="button">+</button>
+            </div>
+          </div>
+
+          <div class="tool-row" role="group" aria-label="Tool mode">
+            <button id="brushButton" class="tool-button active" type="button">Brush</button>
+            <button id="eraserButton" class="tool-button" type="button">Eraser</button>
+            <button id="fillButton" class="tool-button" type="button">Fill</button>
+            <button id="pickerButton" class="tool-button" type="button">Pick</button>
+          </div>
+
+          <div class="tool-row" role="group" aria-label="Shape tools">
+            <button id="lineButton" class="tool-button" type="button">Line</button>
+            <button id="circleButton" class="tool-button" type="button">Circle</button>
+            <button id="squareButton" class="tool-button" type="button">Square</button>
+            <button id="textButton" class="tool-button" type="button">Text</button>
+          </div>
+
+          <div class="swatches" aria-label="Available colors">
+            <button class="swatch" type="button" data-color="#111827" style="--swatch: #111827" title="Black"></button>
+            <button class="swatch" type="button" data-color="#ef4444" style="--swatch: #ef4444" title="Red"></button>
+            <button class="swatch" type="button" data-color="#f59e0b" style="--swatch: #f59e0b" title="Amber"></button>
+            <button class="swatch" type="button" data-color="#22c55e" style="--swatch: #22c55e" title="Green"></button>
+            <button class="swatch" type="button" data-color="#2563eb" style="--swatch: #2563eb" title="Blue"></button>
+            <button class="swatch" type="button" data-color="#7c3aed" style="--swatch: #7c3aed" title="Violet"></button>
+          </div>
+
+          <div class="tool-row" role="group" aria-label="Canvas actions">
+            <button id="undoButton" class="tool-button" type="button">Undo</button>
+            <button id="redoButton" class="tool-button" type="button">Redo</button>
+          </div>
+
+          <div class="tool-row" role="group" aria-label="Storage actions">
+            <button id="saveDrawingButton" class="tool-button" type="button">Save</button>
+            <button id="loadDrawingButton" class="tool-button" type="button">Load</button>
+            <button id="clearButton" class="danger-button" type="button">Clear</button>
+          </div>
+        </aside>
+
+        <div class="canvas-panel">
+          <canvas id="drawingCanvas" width="1400" height="900" aria-label="Drawing canvas"></canvas>
+          <div id="brushPreview" class="brush-preview" aria-hidden="true"></div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./src/main.browser.js"></script>
+  </body>
+</html>
