@@ -14,6 +14,7 @@ export interface FloodFillResult {
   imageData: ImageData;
 }
 
+/** Converts a six-digit hex color to opaque RGBA; throws for unsupported formats. */
 export function hexToRgba(hexColor: string): RgbaColor {
   if (!/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
     throw new DrawingAppError(`Unsupported color: ${hexColor}`);
@@ -27,6 +28,7 @@ export function hexToRgba(hexColor: string): RgbaColor {
   };
 }
 
+/** Mutates connected matching pixels, using recursion for at most 400 pixels and a stack otherwise. */
 export function floodFill(imageData: ImageData, startX: number, startY: number, fillColor: RgbaColor): FloodFillResult {
   if (!imageData || !imageData.data) {
     throw new DrawingAppError('Canvas data is missing.');
@@ -52,11 +54,13 @@ export function floodFill(imageData: ImageData, startX: number, startY: number, 
   return floodFillWithStack(imageData, startX, startY, targetColor, fillColor);
 }
 
+/** Fills a small image recursively and returns the image with its changed-pixel count. */
 function floodFillRecursive(imageData: ImageData, startX: number, startY: number, targetColor: RgbaColor, fillColor: RgbaColor): FloodFillResult {
   const { width, height, data } = imageData;
   const checkedPixels: boolean[] = new Array(width * height).fill(false);
   let changedPixels = 0;
 
+  /** Recursively fills four neighbors, stopping at boundaries, visited pixels, or different colors. */
   const fillPixel = (x: number, y: number): void => {
     if (x < 0 || y < 0 || x >= width || y >= height) {
       return;
@@ -89,6 +93,7 @@ function floodFillRecursive(imageData: ImageData, startX: number, startY: number
   return { changedPixels, imageData };
 }
 
+/** Fills connected pixels using an explicit stack to avoid recursive call-stack limits. */
 function floodFillWithStack(imageData: ImageData, startX: number, startY: number, targetColor: RgbaColor, fillColor: RgbaColor): FloodFillResult {
   const { width, height, data } = imageData;
   const checkedPixels: boolean[] = new Array(width * height).fill(false);
@@ -133,10 +138,12 @@ function floodFillWithStack(imageData: ImageData, startX: number, startY: number
   return { changedPixels, imageData };
 }
 
+/** Returns the red-channel offset for a pixel in a flat RGBA buffer. */
 function getPixelIndex(x: number, y: number, width: number): number {
   return (y * width + x) * 4;
 }
 
+/** Reads four consecutive RGBA channels at a buffer offset. */
 function readPixel(data: Uint8ClampedArray, index: number): RgbaColor {
   return {
     a: data[index + 3],
@@ -146,6 +153,7 @@ function readPixel(data: Uint8ClampedArray, index: number): RgbaColor {
   };
 }
 
+/** Writes four RGBA channels into the supplied pixel buffer. */
 function writePixel(data: Uint8ClampedArray, index: number, color: RgbaColor): void {
   data[index] = color.r;
   data[index + 1] = color.g;
@@ -153,6 +161,7 @@ function writePixel(data: Uint8ClampedArray, index: number, color: RgbaColor): v
   data[index + 3] = color.a;
 }
 
+/** Reports whether all four channels of two colors match exactly. */
 function colorsMatch(first: RgbaColor, second: RgbaColor): boolean {
   return first.r === second.r && first.g === second.g && first.b === second.b && first.a === second.a;
 }

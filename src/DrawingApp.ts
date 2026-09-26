@@ -26,11 +26,12 @@ export class DrawingApp {
   private selectionElement: HTMLDivElement | null;
   private statusHandler: (message: string, isError?: boolean) => void;
 
+  /** Initializes tools, history, canvas events, and optional UI callbacks; throws if the 2D context is unavailable. */
   constructor(
     canvas: HTMLCanvasElement,
     statusHandler: (message: string, isError?: boolean) => void,
     preview: HTMLElement | null = null,
-    pickedColorHandler: (color: string) => void = () => undefined
+    pickedColorHandler: (color: string) => void = /** Leaves picked-color notifications unused when no callback is supplied. */ () => undefined
   ) {
     const context = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -60,22 +61,25 @@ export class DrawingApp {
     this.updatePreviewStyle();
   }
 
+  /** Selects the active tool and updates its preview and status message. */
   public setMode(mode: ToolMode): void {
     this.mode = mode;
     this.updatePreviewStyle();
     this.statusHandler(`Selected ${mode} tool.`);
   }
 
+  /** Validates and applies a brush color, reporting any validation error in the UI. */
   public setColor(color: string): void {
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       this.brush.setColor(color);
       this.updatePreviewStyle();
       this.statusHandler(`Brush color changed to ${color}.`);
     });
   }
 
+  /** Updates brush size and a clamped eraser size, reporting invalid input. */
   public setSize(size: number): void {
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       this.brush.setSize(size);
       this.eraser.setSize(Math.min(80, Math.max(1, size * 2)));
       this.updatePreviewStyle();
@@ -83,24 +87,27 @@ export class DrawingApp {
     });
   }
 
+  /** Undoes the latest action and redraws the remaining history. */
   public undo(): void {
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       this.history.undo();
       this.renderHistory();
       this.statusHandler('Undo completed.');
     });
   }
 
+  /** Restores the latest undone action and redraws the canvas. */
   public redo(): void {
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       this.history.redo();
       this.renderHistory();
       this.statusHandler('Redo completed.');
     });
   }
 
+  /** Clears drawing history, cached coordinates, and the canvas. */
   public clear(): void {
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       this.history.clear();
       this.strokes.length = 0;
       this.coordinates.length = 0;
@@ -109,15 +116,17 @@ export class DrawingApp {
     });
   }
 
+  /** Serializes current actions to synchronous browser storage through the async error handler. */
   public async saveDrawing(): Promise<void> {
-    await this.tryAsyncAction(async () => {
+    await this.tryAsyncAction(/** Performs the operation within the shared error-handling wrapper. */ async () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history.actions));
       this.statusHandler('Drawing saved in browser storage.');
     });
   }
 
+  /** Loads saved actions and redraws them, reporting missing data or parsing errors. */
   public async loadDrawing(): Promise<void> {
-    await this.tryAsyncAction(async () => {
+    await this.tryAsyncAction(/** Performs the operation within the shared error-handling wrapper. */ async () => {
       const storedDrawing = localStorage.getItem(STORAGE_KEY);
 
       if (!storedDrawing) {
@@ -131,8 +140,9 @@ export class DrawingApp {
     });
   }
 
+  /** Awaits PNG encoding, triggers a download, and releases the temporary object URL. */
   public async saveImage(): Promise<void> {
-    await this.tryAsyncAction(async () => {
+    await this.tryAsyncAction(/** Performs the operation within the shared error-handling wrapper. */ async () => {
       const imageUrl = await this.canvasToImageUrl();
       const link = document.createElement('a');
       link.href = imageUrl;
@@ -143,25 +153,28 @@ export class DrawingApp {
     });
   }
 
+  /** Refreshes the tool preview after the displayed canvas scale changes. */
   public refreshPreview(): void {
     this.updatePreviewStyle();
   }
 
+  /** Connects pointer events to drawing and preview handlers. */
   private attachCanvasEvents(): void {
-    this.canvas.addEventListener('pointerdown', (event) => this.startDrawing(event));
-    this.canvas.addEventListener('pointermove', (event) => this.draw(event));
-    this.canvas.addEventListener('pointerenter', (event) => this.showPreview(event));
-    this.canvas.addEventListener('pointerleave', () => {
+    this.canvas.addEventListener('pointerdown', /** Handles 'pointerdown' events: applies the associated drawing or UI action. */ (event) => this.startDrawing(event));
+    this.canvas.addEventListener('pointermove', /** Handles 'pointermove' events: applies the associated drawing or UI action. */ (event) => this.draw(event));
+    this.canvas.addEventListener('pointerenter', /** Handles 'pointerenter' events: applies the associated drawing or UI action. */ (event) => this.showPreview(event));
+    this.canvas.addEventListener('pointerleave', /** Handles 'pointerleave' events: applies the associated drawing or UI action. */ () => {
       this.hidePreview();
     });
-    window.addEventListener('pointerup', () => this.stopDrawing());
+    window.addEventListener('pointerup', /** Handles 'pointerup' events: applies the associated drawing or UI action. */ () => this.stopDrawing());
   }
 
+  /** Begins a stroke or selection, or immediately applies the fill or color-picker tool. */
   private startDrawing(event: PointerEvent): void {
     event.preventDefault();
     this.movePreview(event);
 
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       const point = this.getCanvasPoint(event);
 
       if (this.mode === 'fill') {
@@ -194,6 +207,7 @@ export class DrawingApp {
     });
   }
 
+  /** Extends the active stroke or previews a shape or text selection as the pointer moves. */
   private draw(event: PointerEvent): void {
     event.preventDefault();
     this.movePreview(event);
@@ -207,7 +221,7 @@ export class DrawingApp {
       return;
     }
 
-    this.tryAction(() => {
+    this.tryAction(/** Performs the operation within the shared error-handling wrapper. */ () => {
       const point = this.getCanvasPoint(event);
       const previousPoint = this.currentStroke[this.currentStroke.length - 1];
       this.currentStroke.push(point);
@@ -232,6 +246,7 @@ export class DrawingApp {
     });
   }
 
+  /** Commits a completed stroke or shape, or opens the selected text editor. */
   private stopDrawing(): void {
     if (!this.drawing) {
       return;
@@ -265,6 +280,7 @@ export class DrawingApp {
     this.renderHistory();
   }
 
+  /** Shows the optional tool preview at the pointer position. */
   private showPreview(event: PointerEvent): void {
     if (!this.preview) {
       return;
@@ -274,6 +290,7 @@ export class DrawingApp {
     this.movePreview(event);
   }
 
+  /** Hides the optional tool preview when the pointer leaves the canvas. */
   private hidePreview(): void {
     if (!this.preview) {
       return;
@@ -282,6 +299,7 @@ export class DrawingApp {
     this.preview.classList.remove('visible');
   }
 
+  /** Positions the optional preview using viewport pointer coordinates. */
   private movePreview(event: PointerEvent): void {
     if (!this.preview) {
       return;
@@ -291,6 +309,7 @@ export class DrawingApp {
     this.preview.style.top = `${event.clientY}px`;
   }
 
+  /** Scales and styles the preview for the current tool, color, and canvas display size. */
   private updatePreviewStyle(): void {
     if (!this.preview) {
       return;
@@ -309,6 +328,7 @@ export class DrawingApp {
     this.preview.classList.toggle('fill-preview', this.mode === 'fill' || this.mode === 'picker' || this.mode === 'text');
   }
 
+  /** Samples a canvas pixel and synchronizes the brush and color-picker UI. */
   private pickColor(point: Point): void {
     const imageData = this.context.getImageData(point.x, point.y, 1, 1);
     const [red, green, blue] = imageData.data;
@@ -320,6 +340,7 @@ export class DrawingApp {
     this.statusHandler(`Picked color ${color}.`);
   }
 
+  /** Fills connected matching pixels and records the fill action in history. */
   private fill(point: Point): void {
     const imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
     const result = floodFill(imageData, point.x, point.y, hexToRgba(this.brush.color));
@@ -328,6 +349,7 @@ export class DrawingApp {
     this.statusHandler(`Filled ${result.changedPixels} pixels.`);
   }
 
+  /** Replays saved actions on a white canvas and rebuilds stroke and coordinate caches. */
   private renderHistory(): void {
     this.prepareCanvas();
     this.strokes.length = 0;
@@ -352,6 +374,7 @@ export class DrawingApp {
     }
   }
 
+  /** Draws a stored brush or eraser path, including its initial dot. */
   private renderStroke(action: StrokeAction): void {
     if (action.points.length === 0) {
       return;
@@ -374,6 +397,7 @@ export class DrawingApp {
     this.drawCircle(action.points[0], action.size / 2, action.color);
   }
 
+  /** Captures shape endpoints and current brush settings for later replay. */
   private createShapeAction(start: Point, end: Point, tool: 'circle' | 'line' | 'square'): ShapeAction {
     return {
       color: this.brush.color,
@@ -384,6 +408,7 @@ export class DrawingApp {
     };
   }
 
+  /** Draws a stored line, circle, or square using its recorded style. */
   private renderShape(action: ShapeAction): void {
     this.context.strokeStyle = action.color;
     this.context.lineWidth = action.size;
@@ -413,6 +438,7 @@ export class DrawingApp {
     this.context.stroke();
   }
 
+  /** Wraps and draws stored text, omitting lines below the text box. */
   private renderText(action: TextAction): void {
     this.context.fillStyle = action.color;
     this.context.font = `${action.size}px Arial, sans-serif`;
@@ -421,7 +447,7 @@ export class DrawingApp {
     const lines = this.wrapText(action.text, action.width, action.size);
     const lineHeight = action.size * 1.2;
 
-    lines.forEach((line, index) => {
+    lines.forEach(/** Draws each wrapped line that fits within the text box. */ (line, index) => {
       const y = action.point.y + (index * lineHeight);
 
       if (y <= action.point.y + action.height - action.size) {
@@ -430,6 +456,7 @@ export class DrawingApp {
     });
   }
 
+  /** Places a textarea over the selected canvas region and connects commit and cancel events. */
   private createTextEditor(start: Point, end: Point): void {
     const box = this.getCanvasBox(start, end);
     const screenBox = this.canvasBoxToScreenBox(box);
@@ -445,8 +472,8 @@ export class DrawingApp {
     editor.style.fontSize = `${textSize * screenBox.scaleX}px`;
     editor.placeholder = 'Type here';
 
-    editor.addEventListener('blur', () => this.removeEditor(true));
-    editor.addEventListener('keydown', (event) => {
+    editor.addEventListener('blur', /** Handles 'blur' events: commits or cancels text editing. */ () => this.removeEditor(true));
+    editor.addEventListener('keydown', /** Handles 'keydown' events: commits or cancels text editing. */ (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         this.removeEditor(false);
@@ -464,6 +491,7 @@ export class DrawingApp {
     editor.focus();
   }
 
+  /** Removes the text editor, optionally committing nonempty text to history. */
   private removeEditor(shouldCommit: boolean): void {
     if (!this.editorElement) {
       return;
@@ -492,6 +520,7 @@ export class DrawingApp {
     editor.remove();
   }
 
+  /** Creates or resizes the visible outline of a text selection. */
   private showTextSelection(start: Point, end: Point): void {
     if (!this.selectionElement) {
       this.selectionElement = document.createElement('div');
@@ -506,6 +535,7 @@ export class DrawingApp {
     this.selectionElement.style.height = `${screenBox.height}px`;
   }
 
+  /** Removes the temporary text-selection outline if present. */
   private removeTextSelection(): void {
     if (!this.selectionElement) {
       return;
@@ -515,6 +545,7 @@ export class DrawingApp {
     this.selectionElement = null;
   }
 
+  /** Applies the active brush or white eraser style to the canvas context. */
   private applyStrokeStyle(): void {
     const color = this.mode === 'eraser' ? '#ffffff' : this.brush.color;
     const size = this.mode === 'eraser' ? this.eraser.size : this.brush.size;
@@ -525,12 +556,14 @@ export class DrawingApp {
     this.context.lineJoin = 'round';
   }
 
+  /** Draws a single dot using the active brush or eraser settings. */
   private drawPoint(point: Point): void {
     const color = this.mode === 'eraser' ? '#ffffff' : this.brush.color;
     const size = this.mode === 'eraser' ? this.eraser.size : this.brush.size;
     this.drawCircle(point, size / 2, color);
   }
 
+  /** Paints a filled circle at a canvas point with the supplied radius and color. */
   private drawCircle(point: Point, radius: number, color: string): void {
     this.context.fillStyle = color;
     this.context.beginPath();
@@ -538,22 +571,27 @@ export class DrawingApp {
     this.context.fill();
   }
 
+  /** Narrows a tool mode to one of the supported shape tools. */
   private isShapeMode(mode: ToolMode): mode is 'circle' | 'line' | 'square' {
     return mode === 'circle' || mode === 'line' || mode === 'square';
   }
 
+  /** Narrows a drawing action to a shape action using its tool field. */
   private isShapeAction(action: DrawingAction): action is ShapeAction {
     return action.tool === 'circle' || action.tool === 'line' || action.tool === 'square';
   }
 
+  /** Narrows a drawing action to a text action using its tool field. */
   private isTextAction(action: DrawingAction): action is TextAction {
     return action.tool === 'text';
   }
 
+  /** Derives a font size from the brush size with a minimum of 12 pixels. */
   private getTextSize(): number {
     return Math.max(12, this.brush.size * 3);
   }
 
+  /** Normalizes selection endpoints into a box with minimum editing dimensions. */
   private getCanvasBox(start: Point, end: Point): { height: number; width: number; x: number; y: number } {
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
@@ -563,6 +601,7 @@ export class DrawingApp {
     return { height, width, x, y };
   }
 
+  /** Converts a canvas box to viewport coordinates and reports its display scale. */
   private canvasBoxToScreenBox(box: { height: number; width: number; x: number; y: number }): { height: number; left: number; scaleX: number; scaleY: number; top: number; width: number } {
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = rect.width / this.canvas.width;
@@ -578,6 +617,7 @@ export class DrawingApp {
     };
   }
 
+  /** Converts a viewport rectangle back into canvas coordinates. */
   private screenBoxToCanvasBox(rect: DOMRect): { height: number; width: number; x: number; y: number } {
     const canvasRect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / canvasRect.width;
@@ -591,6 +631,7 @@ export class DrawingApp {
     };
   }
 
+  /** Splits paragraphs into lines using measured word widths and the requested font size. */
   private wrapText(text: string, maxWidth: number, fontSize: number): string[] {
     this.context.font = `${fontSize}px Arial, sans-serif`;
 
@@ -618,14 +659,17 @@ export class DrawingApp {
     return lines;
   }
 
+  /** Converts three RGB channel values to a six-digit hexadecimal color. */
   private rgbToHex(red: number, green: number, blue: number): string {
     return `#${this.colorPartToHex(red)}${this.colorPartToHex(green)}${this.colorPartToHex(blue)}`;
   }
 
+  /** Formats a color channel as a two-digit hexadecimal component. */
   private colorPartToHex(value: number): string {
     return value.toString(16).padStart(2, '0');
   }
 
+  /** Converts pointer coordinates to integer canvas pixels, accounting for display scaling. */
   private getCanvasPoint(event: PointerEvent): Point {
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
@@ -637,14 +681,16 @@ export class DrawingApp {
     };
   }
 
+  /** Paints the entire canvas white before drawing or replaying actions. */
   private prepareCanvas(): void {
     this.context.fillStyle = '#ffffff';
     this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
+  /** Encodes the canvas as PNG and resolves an object URL, rejecting if no blob is produced. */
   private async canvasToImageUrl(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      this.canvas.toBlob((blob) => {
+    return new Promise(/** Starts canvas encoding and connects its result to this promise. */ (resolve, reject) => {
+      this.canvas.toBlob(/** Resolves a PNG object URL or rejects when canvas encoding fails. */ (blob) => {
         if (!blob) {
           reject(new DrawingAppError('Canvas data is missing.'));
           return;
@@ -655,6 +701,7 @@ export class DrawingApp {
     });
   }
 
+  /** Runs a synchronous operation and routes thrown errors to the status handler. */
   private tryAction(action: () => void): void {
     try {
       action();
@@ -663,6 +710,7 @@ export class DrawingApp {
     }
   }
 
+  /** Awaits an operation and routes thrown errors or rejected promises to the status handler. */
   private async tryAsyncAction(action: () => Promise<void>): Promise<void> {
     try {
       await action();
@@ -671,6 +719,7 @@ export class DrawingApp {
     }
   }
 
+  /** Displays an error message, using a fallback for unknown thrown values. */
   private handleError(error: unknown): void {
     const message = error instanceof Error ? error.message : 'Something went wrong.';
     this.statusHandler(message, true);

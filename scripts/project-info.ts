@@ -11,6 +11,7 @@ interface PackageInfo {
   version: string;
 }
 
+/** Runs a shell command asynchronously and returns its output, including output from failed commands. */
 async function runCommand(command: string): Promise<string> {
   try {
     const { stdout, stderr } = await execAsync(command);
@@ -25,6 +26,7 @@ async function runCommand(command: string): Promise<string> {
   }
 }
 
+/** Reads package metadata and prints project details followed by the Jest command output. */
 async function main(): Promise<void> {
   const packageJson = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8')) as PackageInfo;
 

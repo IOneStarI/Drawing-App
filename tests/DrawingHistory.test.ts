@@ -8,8 +8,8 @@ const action: DrawingAction = {
   tool: 'brush'
 };
 
-describe('DrawingHistory', () => {
-  it('adds actions and clears redo history after a new action', () => {
+describe('DrawingHistory', /** Groups the DrawingHistory behavior tests. */ () => {
+  it('adds actions and clears redo history after a new action', /** Verifies that the implementation adds actions and clears redo history after a new action. */ () => {
     const history = new DrawingHistory();
     history.add(action);
     history.undo();
@@ -19,7 +19,7 @@ describe('DrawingHistory', () => {
     expect(history.redoCount).toBe(0);
   });
 
-  it('moves actions between undo and redo stacks', () => {
+  it('moves actions between undo and redo stacks', /** Verifies that the implementation moves actions between undo and redo stacks. */ () => {
     const history = new DrawingHistory([action]);
 
     expect(history.undo()).toEqual(action);
