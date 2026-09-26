@@ -6,7 +6,7 @@ This software is a web-based drawing app that lets users draw on a canvas with a
 
 The purpose of creating this software was to learn how canvas drawing tools work behind the scenes. I wanted to practice TypeScript classes, arrays for storing drawing actions and history, async browser storage features, error handling, and automated tests with Jest.
 
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video](https://youtu.be/fPy_cxChDlM)
 
 # Development Environment
 
